@@ -83,7 +83,7 @@
         "meta": { "$ref": "#/definitions/meta" }
       },
       "patternProperties": {
-        "^(?!self$)(?!meta$)": {
+        "^(?!(self|meta)$)": {
           "anyOf": [
             { "$ref": "#/definitions/linkageToOne" },
             { "$ref": "#/definitions/linkageToMany" },
@@ -97,19 +97,36 @@
       "description": "`type` and `id` members for to-one relationships.",
       "allOf": [
         { "$ref": "#/definitions/linkage" },
-        { "required": [ "type", "id" ] }
+        {
+          "required": [ "type", "id" ],
+          "properties": {
+            "id": {
+              "description": "`type` and `id` members for to-one relationships. `id` is the unique identifier for the given `type`",
+              "type": "string"
+            }
+          }
+        }
       ]
     },
     "linkageToMany": {
-      "description": "`type` and `ids` members for homogeneous to-many relationships.",
+      "description": "`type` and `id` members for homogeneous to-many relationships. If `id` is specified, `type` **MUST** also be specified; otherwise, specify `related` or `self`.",
       "allOf": [
         { "$ref": "#/definitions/linkage" },
         { "$ref": "#/definitions/pagination" },
-        { "required": [ "type" ] }
+        {
+          "properties": {
+            "id": {
+              "description": "`type` and `id` members for homogeneous to-many relationships.",
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            }
+          }
+        }
       ]
     },
     "linkageMissing": {
-      "description": "If `id` is null or `ids` is an `empty array ([])`, nothing is required.",
+      "description": "If `id` is null or an `empty array ([])`, nothing is required.",
       "oneOf": [{ "$ref": "#/definitions/linkage" }]
     },
     "linkage": {
@@ -127,16 +144,16 @@
         "type": {
           "description": "Member for to-one relationships and homogeneous to-many relationships. `type` defines the type of resource. `type` is not required if the value of `id` is `null`.",
           "type": "string"
-        },
-        "id": {
-          "description": "`type` and `id` members for to-one relationships. `id` is the unique identifier for the given `type`",
-          "type": "string"
-        },
-        "ids": {
-          "description": "`type` and `ids` members for homogeneous to-many relationships.",
-          "type": "array",
-          "items": { "type": "string" },
-          "uniqueItems": true
+        }
+      },
+      "patternProperties": {
+        "^(?!(self|related|type|id)$)": {
+          "anyOf": [
+            { "$ref": "#/definitions/linkageToOne" },
+            { "$ref": "#/definitions/linkageToMany" },
+            { "$ref": "#/definitions/linkageMissing" },
+            { "type": "string" }
+          ]
         }
       },
       "additionalProperties": true
