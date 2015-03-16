@@ -20,9 +20,6 @@ extension [as described in the base specification](/format/#extending) using
 
 ## Patch Operations <a href="#patch-operations" id="patch-operations" class="headerlink"></a>
 
-Patch operations **MUST** specify a `Content-Type` header of
-`application/vnd.api+json; ext=jsonpatch`.
-
 Patch operations **MUST** be sent as an array to conform with the JSON
 Patch format. A server **MAY** limit the type, order, and count of
 operations allowed in this top level array.
@@ -30,7 +27,7 @@ operations allowed in this top level array.
 ### Request URLs and Patch Paths <a href="#patch-urls" id="patch-urls" class="headerlink"></a>
 
 The request URL and each Patch operation's `"path"` are complementary and
-MUST combine to target a particular resource, collection, attribute, or
+**MUST** combine to target a particular resource, collection, attribute, or
 relationship.
 
 If a server supports the Patch extension, it **MUST** allow Patch operations at
@@ -150,7 +147,14 @@ Content-Type: application/vnd.api+json; ext=jsonpatch
 Accept: application/vnd.api+json; ext=jsonpatch
 
 [
-  { "op": "replace", "path": "", "value": {"type": "tags", "id": ["2", "3"]} }
+  { 
+    "op": "replace", 
+    "path": "", 
+    "value": [
+      { "type": "tags", "id": "2" }, 
+      { "type": "tags", "id": "3" } 
+    ]
+  }
 ]
 ```
 
@@ -167,14 +171,20 @@ Content-Type: application/vnd.api+json; ext=jsonpatch
 Accept: application/vnd.api+json; ext=jsonpatch
 
 [
-  { "op": "add", "path": "/-", "value": { "type": "comments", "id": ["123"] } }
+  { 
+    "op": "add", 
+    "path": "/-", 
+    "value": [
+      { "type": "comments", "id": "123" }
+    ]
+  }
 ]
 ```
 
 To remove a to-many relationship, perform a `"remove"` operation that targets
 the relationship's URL.
 
-In the following example, comments with IDs of `12` and `13` are removed
+In the following example, comments with IDs of `5` and `13` are removed
 from the list of comments for the article with ID `1`:
 
 ```text
@@ -183,7 +193,14 @@ Content-Type: application/vnd.api+json; ext=jsonpatch
 Accept: application/vnd.api+json; ext=jsonpatch
 
 [
-  { "op": "remove", "path": "", "value": {"type": "comments", "id": ["5", "13"]} }
+  { 
+    "op": "remove", 
+    "path": "", 
+    "value": [
+      { "type": "comments", "id": "5" },
+      { "type": "comments", "id": "13" }
+    ]
+  }
 ]
 ```
 

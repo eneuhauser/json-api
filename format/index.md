@@ -45,22 +45,39 @@ server supports both the "bulk" and "jsonpatch" extensions.
 
 If an extension is used to form a particular request or response document,
 then it **MUST** be specified by including its name in the `ext` media type
-parameter with the `Content-Type` header. The `ext` media type parameter
-**MUST NOT** include more than one extension name.
+parameter with the `Content-Type` header. The value of the `ext` media type
+parameter **MUST** be formatted as a comma-separated (U+002C COMMA, ",")
+list of extension names and **MUST** be limited to a subset of the
+extensions supported by the server, which are listed in `supported-ext` 
+of every response.
 
 For example: a response that includes the header `Content-Type:
-application/vnd.api+json; ext=jsonpatch; supported-ext=bulk,jsonpatch`
-indicates that the document is formatted according to the "jsonpatch"
-extension.
+application/vnd.api+json; ext=ext1,ext2; supported-ext=ext1,ext2,ext3`
+indicates that the response document is formatted according to the
+extensions "ext1" and "ext2". Another example: a request that includes 
+the header `Content-Type: application/vnd.api+json; ext=ext1,ext2`
+indicates that the request document is formatted according to the
+extensions "ext1" and "ext2".
 
 Clients **MAY** request a particular media type extension by including its
 name in the `ext` media type parameter with the `Accept` header. Servers
-that do not support a requested extension **MUST** return a `415 Unsupported
-Media Type` status code.
+that do not support a requested extension or combination of extensions
+**MUST** return a `406 Not Acceptable` status code.
 
-Servers **MUST NOT** provide extended functionality that is incompatible with the
-base specification to clients that do not request the extension in the `ext`
-parameter of the `Content-Type` or the `Accept` header.
+If the media type in the `Accept` header is supported by a server but the
+media type in the `Content-Type` header is unsupported, the server
+**MUST** return a `415 Unsupported Media Type` status code.
+
+Servers **MUST NOT** provide extended functionality that is incompatible
+with the base specification to clients that do not request the extension in
+the `ext` parameter of the `Content-Type` or the `Accept` header.
+
+> Note: Since extensions can contradict one another or have interactions
+that can be resolved in many equally plausible ways, it is the
+responsibility of the server to decide which extensions are compatible, and
+it is the responsibility of the designer of each implementation of this
+specification to describe extension interoperability rules which are
+applicable to that implementation.
 
 ## Document Structure <a href="#document-structure" id="document-structure" class="headerlink"></a>
 
@@ -75,15 +92,16 @@ certain aspects are only applicable to one or the other. These differences are
 called out below.
 
 Unless otherwise noted, objects defined by this specification **MUST NOT**
-contain any additional members.
+contain any additional members. Client and server implementations **MUST**
+ignore object members not recognized by this specification.
+
+> Note: These conditions for object members allow this specification to
+evolve through additive changes.
 
 ### Top Level <a href="#document-structure-top-level" id="document-structure-top-level" class="headerlink"></a>
 
 A JSON object **MUST** be at the root of every JSON API response containing
 data. This object defines a document's "top level".
-
-> Note: Responses that can not contain a message-body, such as `204 No Content`,
-do not include a document with data.
 
 The document's "primary data" is a representation of the resource, collection
 of resources, or resource relationship primarily targeted by a request.
@@ -140,22 +158,6 @@ In addition, a resource object **MAY** contain any of these top-level members:
 * `"meta"`: non-standard meta-information about a resource that can not be
   represented as an attribute or relationship.
 
-A resource object **MAY** contain additional top-level members. These members
-represent "attributes" and may contain any valid JSON value.
-
-If the value of an attribute is a JSON object or array, the member is called a
-*complex attribute*. The value is allowed to be any valid JSON structure.
-However, a JSON object that constitutes or is contained in a complex attribute
-must reserve the `id`, `type`, `links`, and `meta` members for future use.
-
-A resource object's attributes and relationships are collectively called its
-"fields". <a href="#document-structure-resource-fields" id="document-structure-resource-fields"></a>
-
-Although has-one foreign keys (e.g. `author-id`) are often stored internally
-alongside other information to be represented in a resource object, these keys
-**SHOULD NOT** appear as attributes. If relations are provided, they **MUST**
-be represented under the "links object", as described below.
-
 Here's how an article (i.e. a resource of type "articles") might appear in a document:
 
 ```javascript
@@ -168,13 +170,34 @@ Here's how an article (i.e. a resource of type "articles") might appear in a doc
     "author": {
       "self": "/articles/1/links/author",
       "related": "/articles/1/author",
-      "type": "people",
-      "id": "9"
+      "linkage": { "type": "people", "id": "9" }
     }
   }
 }
 // ...
 ```
+
+#### Attributes <a href="#document-structure-resource-object-attributes" id="document-structure-resource-object-attributes"></a>
+
+A resource object **MAY** contain additional top-level members. These members
+represent "[attributes]" and may contain any valid JSON value.
+
+Although has-one foreign keys (e.g. `author_id`) are often stored internally
+alongside other information to be represented in a resource object, these keys
+**SHOULD NOT** appear as attributes. If relations are provided, they **MUST**
+be represented under the "links object".
+
+#### Complex Attributes <a href="#document-structure-resource-object-complex-attributes" id="document-structure-resource-object-complex-attributes"></a>
+
+"[Complex attributes]" are [attributes] whose value is an object or array with
+any level of nesting. An object that constitutes or is contained in a complex
+attribute must reserve the `id`, `type`, `links`, and `meta` members for future
+use.
+
+#### Fields <a href="#document-structure-resource-object-fields" id="document-structure-resource-object-fields" class="headerlink"></a>
+
+A resource object's [attributes] and relationships are collectively called its
+"[fields]". <a href="#document-structure-resource-object-fields" id="document-structure-resource-object-fields"></a>
 
 #### Resource Identification <a href="#document-structure-resource-identification" id="document-structure-resource-identification" class="headerlink"></a>
 
@@ -254,19 +277,12 @@ The value of a relationship **MUST** be one of the following:
 If a relationship is provided as a link object, it **MUST** contain at least
 one of the following:
 
-* A `self` member, whose value is a URL for the relationship itself (a
+* A `"self"` member, whose value is a URL for the relationship itself (a
   "relationship URL"). This URL allows the client to directly manipulate the
   relationship. For example, it would allow a client to remove an `author` from
   an `article` without deleting the `people` resource itself.
-* A `related` member, whose value is a related resource URL (as defined above).
-* Linkage to other resources based on their identifying `id` and `type` members
-  ("resource linkage"). Linkage **MUST** be expressed as:
-  * `type` and `id` members for to-one relationships. `type` is not required
-    if the value of `id` is `null`.
-  * `type` and `id` members for homogeneous to-many relationships. `type` is
-    not required if the value of `id` is an empty array (`[]`).
-  * A `data` member whose value is an array of objects each containing `type`
-    and `id` members for heterogeneous to-many relationships.
+* A `"related"` member, whose value is a related resource URL (as defined above).
+* A `"linkage"` member, whose value represents "resource linkage".
 * A `"meta"` member that contains non-standard meta-information about the
   relationship.
 
@@ -275,8 +291,19 @@ pagination links, as described below.
 
 If a link object refers to resource objects included in the same compound
 document, it **MUST** include resource linkage to those resource objects.
-This allows a client to link together all of the included resource objects
-without having to `GET` one of the relationship URLs.
+
+Resource linkage **MUST** be represented as one of the following:
+
+* `null` for empty to-one relationships.
+* an object containing `"type"` and `"id"` members for non-empty to-one
+  relationships.
+* an empty array (`[]`) for empty to-many relationships.
+* an array of objects each containing `"type"` and `"id"` members for non-empty
+  to-many relationships.
+
+> Note: Resource linkage in a compound document allows a client to link
+together all of the included resource objects without having to `GET` any
+relationship URLs.
 
 > Note: If present, a *related resource URL* must be a valid URL, even if the
 relationship isn't currently associated with any target resources.
@@ -294,45 +321,21 @@ For example, the following article is associated with an `author` and `comments`
     "author": {
       "self": "http://example.com/articles/1/links/author",
       "related": "http://example.com/articles/1/author",
-      "type": "people",
-      "id": "9"
-    },
-    "comments": {
-      "related": "http://example.com/articles/1/comments"
-    }
-  }
-}
-// ...
-```
-
-The `author` relationship includes a URL for the relationship itself (which
-allows the client to change the related author without deleting the `people`
-object), a URL to fetch the resource objects, and linkage information for
-the current compound document.
-
-The `comments` relationship is simpler: it just provides a URL to fetch the
-comments. The following resource object, which provides the `comments`
-relationship as a string value rather than an object, is equivalent:
-
-```javascript
-// ...
-{
-  "type": "articles",
-  "id": "1",
-  "title": "Rails is Omakase",
-  "links": {
-    "self": "http://example.com/articles/1",
-    "author": {
-      "self": "http://example.com/articles/1/links/author",
-      "related": "http://example.com/articles/1/author",
-      "type": "people",
-      "id": "9"
+      "linkage": { "type": "people", "id": "9" }
     },
     "comments": "http://example.com/articles/1/comments"
   }
 }
 // ...
 ```
+
+The `author` relationship includes a URL for the relationship itself (which
+allows the client to change the related author directly), a related resource URL
+to fetch the resource objects, and linkage information.
+
+The `comments` relationship is simpler: it just provides a related resource URL
+to fetch the comments. The URL can therefore be specified directly as the
+attribute value.
 
 ### Compound Documents <a href="#document-structure-compound-documents" id="document-structure-compound-documents" class="headerlink"></a>
 
@@ -356,14 +359,15 @@ A complete example document with multiple included relationships:
       "author": {
         "self": "http://example.com/articles/1/links/author",
         "related": "http://example.com/articles/1/author",
-        "type": "people",
-        "id": "9"
+        "linkage": { "type": "people", "id": "9" }
       },
       "comments": {
         "self": "http://example.com/articles/1/links/comments",
         "related": "http://example.com/articles/1/comments",
-        "type": "comments",
-        "id": ["5", "12"]
+        "linkage": [
+          { "type": "comments", "id": "5" },
+          { "type": "comments", "id": "12" }
+        ]
       }
     }
   }],
@@ -449,8 +453,10 @@ Data, including resources and relationships, can be fetched by sending a
 `GET` request to an endpoint.
 
 JSON API requests **MUST** include an `Accept` header specifying the JSON
-API media type. Servers **MUST** return a `406 Not Acceptable` status code
-if this header is missing or specifies an unsupported media type.
+API media type. This header value **MUST** also include media type
+extensions relevant to the request. Servers **MUST** return a `406 Not
+Acceptable` status code if this header is missing or specifies an
+unsupported media type.
 
 > Note: Servers may support multiple media types at any endpoint. For example,
 a server may choose to support `text/html` in order to simplify viewing content
@@ -464,7 +470,7 @@ A server **MUST** support fetching resource data for every URL provided as:
 
 * a `self` link as part of the top-level *links object*
 * a `self` link as part of a *resource object*
-* a `resource` link as part of a *link object*
+* a `related` link as part of a *link object*
 
 For example, the following request fetches a collection of articles:
 
@@ -615,17 +621,11 @@ GET /articles/1/links/author
 A server **MUST** respond to a successful request to fetch a relationship
 with a `200 OK` response.
 
-The primary data in the response document **MUST** be one of the following:
+The primary data in the response document **MUST** match the appropriate
+value for resource linkage, as described above for link objects.
 
-* `null` for empty to-one relationships.
-* an empty array (`[]`) for empty to-many relationships
-* an object containing `type` and `id` members for non-empty to-one
-  or homogeneous to-many relationships.
-* an array of objects each containing `type` and `id` members for non-empty
-  heterogenous to-many relationships.
-
-The top-level *links object* **MAY** contain `self` and `resource` links,
-as described for link objects.
+The top-level *links object* **MAY** contain `self` and `related` links,
+as described above for link objects.
 
 For example, a `GET` request a to-one relationship URL could return:
 
@@ -639,7 +639,8 @@ Content-Type: application/vnd.api+json
     "related": "/articles/1/author"
   },
   "data": {
-    "type": "people", "id": "12"
+    "type": "people",
+    "id": "12"
   }
 }
 ```
@@ -660,7 +661,7 @@ Content-Type: application/vnd.api+json
 }
 ```
 
-A `GET` request to a homogenous to-many relationship URL could return:
+A `GET` request to a to-many relationship URL could return:
 
 ```text
 HTTP/1.1 200 OK
@@ -671,10 +672,10 @@ Content-Type: application/vnd.api+json
     "self": "/articles/1/links/tags",
     "related": "/articles/1/tags"
   },
-  "data": {
-    "type": "tags",
-    "id": ["2", "3"]
-  }
+  "data": [
+    { "type": "tags", "id": "2" },
+    { "type": "tags", "id": "3" }
+  ]
 }
 ```
 
@@ -691,27 +692,6 @@ Content-Type: application/vnd.api+json
     "related": "/articles/1/tags"
   },
   "data": []
-}
-```
-
-A `GET` request to a heterogenous to-many relationship URL could return:
-
-```text
-HTTP/1.1 200 OK
-Content-Type: application/vnd.api+json
-
-{
-  "links": {
-    "self": "/articles/1/links/tags",
-    "related": "/articles/1/tags"
-  },
-  "data": [{
-    "type": "system-tags",
-    "id": "2"
-  }, {
-    "type": "user-tags",
-    "id": "5"
-  }]
 }
 ```
 
@@ -740,8 +720,8 @@ relationship using the name used in the `links` section of the primary data.
 If a client supplies an `include` parameter, the server **MUST NOT** include
 other resource objects in the `included` section of the compound document.
 
-The value of the `include` parameter is a comma-separated (U+002C COMMA,
-",") list of relationship paths. A relationship path is a dot-separated
+The value of the `include` parameter **MUST** be a comma-separated (U+002C
+COMMA, ",") list of relationship paths. A relationship path is a dot-separated
 (U+002E FULL-STOP, ".") list of relationship names. Each relationship name
 **MUST** be identical to the key in the `links` section of its parent
 resource object.
@@ -776,24 +756,21 @@ GET /articles/1?include=author,comments,comments.author
 
 ### Sparse Fieldsets <a href="#fetching-sparse-fieldsets" id="fetching-sparse-fieldsets" class="headerlink"></a>
 
-A client **MAY** request that an endpoint return only specific
-[fields](#document-structure-resource-fields) in the response on a per-type basis
-by including a `fields[TYPE]` parameter. The value of the parameter is a
-comma-separated (U+002C COMMA, ",") list that refers to the names(s) of the
-fields to be returned.
+A client **MAY** request that an endpoint return only specific [fields] in the
+response on a per-type basis by including a `fields[TYPE]` parameter.
+
+> Note: Only [fields] are affected; `type`, `id`, and (optionally) `self` are
+included as normal.
+
+The value of the `fields` parameter **MUST** be a comma-separated (U+002C
+COMMA, ",") list that refers to the name(s) of the fields to be returned.
+
+If a client requests a restricted set of [fields], an endpoint **MUST NOT**
+include additional [fields] in the response.
 
 ```text
 GET /articles?include=author&fields[articles]=title,body&fields[people]=name
 ```
-
-If a client requests a restricted set of fields, an endpoint **MUST NOT**
-include additional fields in the response.
-
-Resource object properties that are not fields are not affected by the `fields`
-parameter. As stated in the [Resource
-Objects](#document-structure-resource-objects) section, the `type` and `id`
-members **MUST** always be included in each resource object, and the `self`
-property **MAY** be included.
 
 ### Sorting <a href="#fetching-sorting" id="fetching-sorting" class="headerlink"></a>
 
@@ -1091,7 +1068,7 @@ Accept: application/vnd.api+json
 #### Updating a Resource's To-One Relationships <a href="#crud-updating-resource-to-one-relationships" id="crud-updating-resource-to-one-relationships" class="headerlink"></a>
 
 If a to-one relationship is provided in the `links` section of a resource
-object in a `PATCH` request, it **MUST** be one of:
+object in a `PATCH` request, its value **MUST** be either:
 
 * an object with `type` and `id` members corresponding to the related resource
 * `null`, to remove the relationship
@@ -1119,13 +1096,11 @@ Accept: application/vnd.api+json
 #### Updating a Resource's To-Many Relationships <a href="#crud-updating-resource-to-many-relationships" id="crud-updating-resource-to-many-relationships" class="headerlink"></a>
 
 If a to-many relationship is included in the `links` section of a resource
-object, it **MUST** be an object containing:
+object, it **MUST** be either:
 
-* `type` and `id` members for homogeneous to-many relationships; to clear the
-  relationship, set the `id` member to `[]`
-* a `data` member whose value is an array of objects each containing `type` and
-  `id` members for heterogeneous to-many relationships; to clear the
-  relationship, set the `data` member to `[]`
+* an array of objects each containing `type` and `id` members to replace all
+  members of the relationship.
+* an empty array (`[]`) to clear the relationship.
 
 For instance, the following `PATCH` request performs a complete replacement of
 the `tags` for an article:
@@ -1141,7 +1116,10 @@ Accept: application/vnd.api+json
     "id": "1",
     "title": "Rails is a Melting Pot",
     "links": {
-      "tags": { "type": "tags", "id": ["2", "3"] }
+      "tags": [
+        { "type": "tags", "id": "2" },
+        { "type": "tags", "id": "3" }
+      ]
     }
   }
 }
@@ -1230,8 +1208,8 @@ described below.
 The `PATCH` request **MUST** include a top-level member named `data` containing
 one of:
 
-* an object with `type` and `id` members corresponding to the related resource
-* `null`, to remove the relationship
+* an object with `type` and `id` members corresponding to the related resource.
+* `null`, to remove the relationship.
 
 For example, the following request updates the author of an article:
 
@@ -1262,8 +1240,8 @@ a `204 No Content` response.
 
 #### Updating To-Many Relationships <a href="#crud-updating-to-many-relationships" id="crud-updating-to-many-relationships" class="headerlink"></a>
 
-A server **MUST** respond to `PATCH`, `POST`, and `DELETE` requests to a *to-many
-relationship URL* as described below.
+A server **MUST** respond to `PATCH`, `POST`, and `DELETE` requests to a
+*to-many relationship URL* as described below.
 
 For all request types, the body **MUST** contain a `data` member whose value
 is an object that contains `type` and `id` members, or an array of objects
@@ -1283,7 +1261,22 @@ Content-Type: application/vnd.api+json
 Accept: application/vnd.api+json
 
 {
-  "data": { "type": "tags", "id": ["2", "3"] }
+  "data": [
+    { "type": "tags", "id": "2" },
+    { "type": "tags", "id": "3" }
+  ]
+}
+```
+
+And the following request clears every tag for an article:
+
+```text
+PATCH /articles/1/links/tags
+Content-Type: application/vnd.api+json
+Accept: application/vnd.api+json
+
+{
+  "data": []
 }
 ```
 
@@ -1313,7 +1306,9 @@ Content-Type: application/vnd.api+json
 Accept: application/vnd.api+json
 
 {
-  "data": { "type": "comments", "id": ["123"] }
+  "data": [
+    { "type": "comments", "id": "123" }
+  ]
 }
 ```
 
@@ -1337,7 +1332,10 @@ Content-Type: application/vnd.api+json
 Accept: application/vnd.api+json
 
 {
-  "data": { "type": "comments", "id": ["12", "13"] }
+  "data": [
+    { "type": "comments", "id": "12" },
+    { "type": "comments", "id": "13" }
+  ]
 }
 ```
 
@@ -1419,3 +1417,7 @@ An error object **MAY** have the following members:
   [e.g. `["/first-name", "/last-name"]` to reference a couple attributes].
 
 Additional members **MAY** be specified within error objects.
+
+[attributes]: #document-structure-resource-object-attributes
+[complex attributes]: #document-structure-resource-object-complex-attributes
+[fields]: #document-structure-resource-object-fields
