@@ -24,7 +24,11 @@
       "required": [ "errors" ],
       "properties": {
         "meta": { "$ref": "#/definitions/meta" },
-        "errors": { "$ref": "#/definitions/errors" }
+        "errors": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/error" },
+          "uniqueItems": true
+        }
       },
       "additionalProperties": false
     },
@@ -78,113 +82,121 @@
       "properties": {
         "self": {
           "description": "A `self` member, whose value is a URL for the relationship itself (a \"relationship URL\"). This URL allows the client to directly manipulate the relationship. For example, it would allow a client to remove an `author` from an `article` without deleting the people resource itself.",
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         },
         "meta": { "$ref": "#/definitions/meta" }
       },
       "patternProperties": {
         "^(?!(self|meta)$)": {
-          "anyOf": [
-            { "$ref": "#/definitions/linkageToOne" },
-            { "$ref": "#/definitions/linkageToMany" },
-            { "$ref": "#/definitions/linkageMissing" },
-            { "type": "string" }
+          "oneOf": [
+            { "$ref": "#/definitions/relationshipToOne" },
+            { "$ref": "#/definitions/relationshipToMany" },
+            { "type": "string", "format": "uri" }
           ]
         }
       }
     },
-    "linkageToOne": {
-      "description": "`type` and `id` members for to-one relationships.",
-      "allOf": [
-        { "$ref": "#/definitions/linkage" },
-        {
-          "required": [ "type", "id" ],
-          "properties": {
-            "id": {
-              "description": "`type` and `id` members for to-one relationships. `id` is the unique identifier for the given `type`",
-              "type": "string"
-            }
-          }
-        }
-      ]
-    },
-    "linkageToMany": {
-      "description": "`type` and `id` members for homogeneous to-many relationships. If `id` is specified, `type` **MUST** also be specified; otherwise, specify `related` or `self`.",
-      "allOf": [
-        { "$ref": "#/definitions/linkage" },
-        { "$ref": "#/definitions/pagination" },
-        {
-          "properties": {
-            "id": {
-              "description": "`type` and `id` members for homogeneous to-many relationships.",
-              "type": "array",
-              "items": { "type": "string" },
-              "uniqueItems": true
-            }
-          }
-        }
-      ]
-    },
-    "linkageMissing": {
-      "description": "If `id` is null or an `empty array ([])`, nothing is required.",
-      "oneOf": [{ "$ref": "#/definitions/linkage" }]
-    },
-    "linkage": {
-      "description": "Linkage to other resource objects (\"object linkage\") included in a compound document. This allows a client to link together all of the resource objects included in a compound document without having to GET one of the relationship URLs.",
+    
+    "relationshipToOne": {
+      "description": "References to other resource objects in a to-one (\"relationship\"). Relationships can be specified by including a member in a resource's links object.",
       "type": "object",
       "properties": {
         "self": {
           "description": "A `self` member, whose value is a URL for the relationship itself (a \"relationship URL\"). This URL allows the client to directly manipulate the relationship. For example, it would allow a client to remove an `author` from an `article` without deleting the `people` resource itself.",
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         },
         "related": {
           "description": "A URL for the related resource(s) (a \"related resource URL\"). When fetched, it returns the related resource object(s) as the response's primary data. For example, an `article`'s `comments` relationship could specify a URL that returns a list of comment resource objects when retrieved through a `GET` request.",
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         },
-        "type": {
-          "description": "Member for to-one relationships and homogeneous to-many relationships. `type` defines the type of resource. `type` is not required if the value of `id` is `null`.",
-          "type": "string"
-        }
-      },
-      "patternProperties": {
-        "^(?!(self|related|type|id)$)": {
-          "anyOf": [
-            { "$ref": "#/definitions/linkageToOne" },
-            { "$ref": "#/definitions/linkageToMany" },
-            { "$ref": "#/definitions/linkageMissing" },
-            { "type": "string" }
+        "linkage": {
+          "description": "Member, whose value represents \"resource linkage\".",
+          "oneOf": [
+            { "$ref": "#/definitions/empty" },
+            { "$ref": "#/definitions/linkage" }
           ]
-        }
+        },
+        "meta": { "$ref": "#/definitions/meta" }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
+    "relationshipToMany": {
+      "description": "References to other resource objects in a to-many (\"relationship\"). Relationships can be specified by including a member in a resource's links object. This could be an empty array for empty to-many relationships.",
+      "type": "object",
+      "properties": {
+        "self": {
+          "description": "A `self` member, whose value is a URL for the relationship itself (a \"relationship URL\"). This URL allows the client to directly manipulate the relationship. For example, it would allow a client to remove an `author` from an `article` without deleting the `people` resource itself.",
+          "type": "string",
+          "format": "uri"
+        },
+        "related": {
+          "description": "A URL for the related resource(s) (a \"related resource URL\"). When fetched, it returns the related resource object(s) as the response's primary data. For example, an `article`'s `comments` relationship could specify a URL that returns a list of comment resource objects when retrieved through a `GET` request.",
+          "type": "string",
+          "format": "uri"
+        },
+        "linkage": {
+          "description": "An array of objects each containing \"type\" and \"id\" members for to-many relationships.",
+          "type": "array",
+          "items": { "$ref": "#/definitions/linkage" },
+          "uniqueItems": true
+        },
+        "meta": { "$ref": "#/definitions/meta" },
+        
+        "first": { "type": "string", "format": "uri" },
+        "next": { "type": "string", "format": "uri" },
+        "prev": { "type": "string", "format": "uri" },
+        "last": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": false
+    },
+    
+    "empty": {
+      "description": "Describes an empty to-one relationship.",
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "linkage": {
+      "description": "The \"type\" and \"id\" to non-empty members.",
+      "type": "object",
+      "required": [ "type", "id" ],
+      "properties": {
+        "type": { "type": "string" },
+        "id": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    
+    
     "pagination": {
       "type": "object",
       "properties": {
         "first": {
           "description": "the first page of data",
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         },
         "last": {
           "description": "the last page of data",
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         },
         "prev": {
           "description": "the previous page of data",
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         },
         "next": {
           "description": "the next page of data",
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         }
       }
     },
   
-    "errors": {
-      "type": "array",
-      "items": { "$ref": "#/definitions/error" },
-      "uniqueItems": true
-    },
     "error": {
       "type": "object",
       "properties": {
