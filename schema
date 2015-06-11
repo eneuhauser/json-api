@@ -15,9 +15,15 @@
   ],
   
   "definitions": {
-    "root": {
+    "success": {
       "type": "object",
+      "required": [
+        "data"
+      ],
       "properties": {
+        "data": {
+          "$ref": "#/definitions/data"
+        },
         "included": {
           "description": "To reduce the number of HTTP requests, servers **MAY** allow responses that include related resources along with the requested primary resources. Such responses are called \"compound documents\".",
           "type": "array",
@@ -41,72 +47,50 @@
           ]
         },
         "jsonapi": {
-          "description": "An object describing the server's implementation",
-          "type": "object",
-          "properties": {
-            "version": {
-              "type": "string"
-            },
-            "meta": {
-              "$ref": "#/definitions/meta"
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/definitions/jsonapi"
         }
-      }
-    },
-    "success": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/root"
-        },
-        {
-          "required": [
-            "data"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/data"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
+      },
+			"additionalProperties": false
     },
     "failure": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/root"
-        },
-        {
-          "required": [
-            "errors"
-          ],
-          "properties": {
-            "errors": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/error"
-              },
-              "uniqueItems": true
-            }
+      "type": "object",
+      "required": [
+        "errors"
+      ],
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/error"
           },
-          "additionalProperties": false
+          "uniqueItems": true
+        },
+        "meta": {
+          "$ref": "#/definitions/meta"
+        },
+        "jsonapi": {
+          "$ref": "#/definitions/jsonapi"
         }
-      ]
+      },
+      "additionalProperties": false
     },
     "info": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/root"
+      "type": "object",
+      "required": [
+        "meta"
+      ],
+      "properties": {
+        "meta": {
+          "$ref": "#/definitions/meta"
         },
-        {
-          "required": [
-            "meta"
-          ],
-          "additionalProperties": false
+        "links": {
+					"$ref": "#/definitions/links"
+        },
+        "jsonapi": {
+          "$ref": "#/definitions/jsonapi"
         }
-      ]
+			},
+			"additionalProperties": false
     },
     
     "meta": {
@@ -159,6 +143,7 @@
       },
       "additionalProperties": false
     },
+		
     "links": {
       "description": "A resource object **MAY** contain references to other resource objects (\"relationships\"). Relationships may be to-one or to-many. Relationships can be specified by including a member in a resource's links object.",
       "type": "object",
@@ -215,24 +200,29 @@
     "relationships": {
       "description": "Members of the relationships object (\"relationships\") represent references from the resource object in which it's defined to other resource objects.",
       "type": "object",
-      "properties": {
-        "links": {
-          "$ref": "#/definitions/links"
-        },
-        "data": {
-          "description": "Member, whose value represents \"resource linkage\".",
-          "oneOf": [
-            {
-              "$ref": "#/definitions/relationshipToOne"
-            },
-            {
-              "$ref": "#/definitions/relationshipToMany"
-            }
-          ]
-        },
-        "meta": {
-          "$ref": "#/definitions/meta"
-        }
+			"patternProperties": {
+				"^\\w[\\w-_]*$": {
+		      "properties": {
+		        "links": {
+		          "$ref": "#/definitions/links"
+		        },
+		        "data": {
+		          "description": "Member, whose value represents \"resource linkage\".",
+		          "oneOf": [
+		            {
+		              "$ref": "#/definitions/relationshipToOne"
+		            },
+		            {
+		              "$ref": "#/definitions/relationshipToMany"
+		            }
+		          ]
+		        },
+		        "meta": {
+		          "$ref": "#/definitions/meta"
+		        }
+					},
+					"additionalProperties": false
+				}
 			},
 			"additionalProperties": false
     },
@@ -302,6 +292,20 @@
           "format": "uri"
         }
       }
+    },
+		
+    "jsonapi": {
+      "description": "An object describing the server's implementation",
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/meta"
+        }
+      },
+      "additionalProperties": false
     },
 		
     "error": {
