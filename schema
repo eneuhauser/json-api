@@ -190,7 +190,7 @@
 			"description": "Members of the attributes object (\"attributes\") represent information about the resource object in which it's defined.",
       "type": "object",
 			"patternProperties": {
-				"^\\w[\\w-_]*$": {
+				"^(?!relationships$|links$)\\w[\\w-_]*$": {
 					"description": "Attributes may contain any valid JSON value."
 				}
 			},
