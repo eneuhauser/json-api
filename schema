@@ -50,7 +50,7 @@
           "$ref": "#/definitions/jsonapi"
         }
       },
-			"additionalProperties": false
+      "additionalProperties": false
     },
     "failure": {
       "type": "object",
@@ -84,13 +84,13 @@
           "$ref": "#/definitions/meta"
         },
         "links": {
-					"$ref": "#/definitions/links"
+          "$ref": "#/definitions/links"
         },
         "jsonapi": {
           "$ref": "#/definitions/jsonapi"
         }
-			},
-			"additionalProperties": false
+      },
+      "additionalProperties": false
     },
     
     "meta": {
@@ -143,7 +143,7 @@
       },
       "additionalProperties": false
     },
-		
+    
     "links": {
       "description": "A resource object **MAY** contain references to other resource objects (\"relationships\"). Relationships may be to-one or to-many. Relationships can be specified by including a member in a resource's links object.",
       "type": "object",
@@ -159,72 +159,72 @@
       },
       "additionalProperties": true
     },
-		"link": {
-			"description": "A link **MUST** be represented as either: a string containing the link's URL or a link object.",
-			"oneOf": [
-				{
-					"description": "A string containing the link's URL.",
-					"type": "string",
-					"format": "uri"
-				},
-				{
-					"type": "object",
-					"required": [
-						"href"
-					],
-					"properties": {
-						"href": {
-							"description": "A string containing the link's URL.",
-							"type": "string",
-							"format": "uri"
-						},
-						"meta": {
-							"$ref": "#/definitions/meta"
-						}
-					}
-				}
-			]
-		},
+    "link": {
+      "description": "A link **MUST** be represented as either: a string containing the link's URL or a link object.",
+      "oneOf": [
+        {
+          "description": "A string containing the link's URL.",
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "object",
+          "required": [
+            "href"
+          ],
+          "properties": {
+            "href": {
+              "description": "A string containing the link's URL.",
+              "type": "string",
+              "format": "uri"
+            },
+            "meta": {
+              "$ref": "#/definitions/meta"
+            }
+          }
+        }
+      ]
+    },
 
     "attributes": {
-			"description": "Members of the attributes object (\"attributes\") represent information about the resource object in which it's defined.",
+      "description": "Members of the attributes object (\"attributes\") represent information about the resource object in which it's defined.",
       "type": "object",
-			"patternProperties": {
-				"^(?!relationships$|links$)\\w[\\w-_]*$": {
-					"description": "Attributes may contain any valid JSON value."
-				}
-			},
+      "patternProperties": {
+        "^(?!relationships$|links$)\\w[\\w-_]*$": {
+          "description": "Attributes may contain any valid JSON value."
+        }
+      },
       "additionalProperties": false
     },
 
     "relationships": {
       "description": "Members of the relationships object (\"relationships\") represent references from the resource object in which it's defined to other resource objects.",
       "type": "object",
-			"patternProperties": {
-				"^\\w[\\w-_]*$": {
-		      "properties": {
-		        "links": {
-		          "$ref": "#/definitions/links"
-		        },
-		        "data": {
-		          "description": "Member, whose value represents \"resource linkage\".",
-		          "oneOf": [
-		            {
-		              "$ref": "#/definitions/relationshipToOne"
-		            },
-		            {
-		              "$ref": "#/definitions/relationshipToMany"
-		            }
-		          ]
-		        },
-		        "meta": {
-		          "$ref": "#/definitions/meta"
-		        }
-					},
-					"additionalProperties": false
-				}
-			},
-			"additionalProperties": false
+      "patternProperties": {
+        "^\\w[\\w-_]*$": {
+          "properties": {
+            "links": {
+              "$ref": "#/definitions/links"
+            },
+            "data": {
+              "description": "Member, whose value represents \"resource linkage\".",
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/relationshipToOne"
+                },
+                {
+                  "$ref": "#/definitions/relationshipToMany"
+                }
+              ]
+            },
+            "meta": {
+              "$ref": "#/definitions/meta"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     },
     "relationshipToOne": {
       "description": "References to other resource objects in a to-one (\"relationship\"). Relationships can be specified by including a member in a resource's links object.",
@@ -293,7 +293,7 @@
         }
       }
     },
-		
+    
     "jsonapi": {
       "description": "An object describing the server's implementation",
       "type": "object",
@@ -307,7 +307,7 @@
       },
       "additionalProperties": false
     },
-		
+    
     "error": {
       "type": "object",
       "properties": {
@@ -315,9 +315,9 @@
           "description": "A unique identifier for this particular occurrence of the problem.",
           "type": "string"
         },
-				"links": {
-					"$ref": "#/definitions/links"
-				},
+        "links": {
+          "$ref": "#/definitions/links"
+        },
         "status": {
           "description": "The HTTP status code applicable to this problem, expressed as a string value.",
           "type": "string"
@@ -334,22 +334,22 @@
           "description": "A human-readable explanation specific to this occurrence of the problem.",
           "type": "string"
         },
-				"source": {
-					"type": "object",
-					"properties": {
-						"pointer": {
-							"description": "A JSON Pointer [RFC6901] to the associated entity in the request document [e.g. \"/data\" for a primary data object, or \"/data/attributes/title\" for a specific attribute].",
-							"type": "string"
-						},
-						"parameter": {
-							"description": "A string indicating which query parameter caused the error.",
-							"type": "string"
-						}
-					}
-				},
-				"meta": {
-					"$ref": "#/definitions/meta"
-				}
+        "source": {
+          "type": "object",
+          "properties": {
+            "pointer": {
+              "description": "A JSON Pointer [RFC6901] to the associated entity in the request document [e.g. \"/data\" for a primary data object, or \"/data/attributes/title\" for a specific attribute].",
+              "type": "string"
+            },
+            "parameter": {
+              "description": "A string indicating which query parameter caused the error.",
+              "type": "string"
+            }
+          }
+        },
+        "meta": {
+          "$ref": "#/definitions/meta"
+        }
       },
       "additionalProperties": false
     }
