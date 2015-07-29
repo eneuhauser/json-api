@@ -3,13 +3,15 @@ layout: page
 title: "JSON API: Specification Status"
 ---
 
-**This document is a work in progress** and will change as implementation work
-progresses. Implementors should be aware that this specification is not stable.
-It is currently missing some details about the `meta` attribute and could be
-more precise about details of working with relationships.
+**The JSON API specification has reached version 1.0.**
 
-Work on this specification is being done at its [GitHub
-repository](https://github.com/json-api/json-api). Please feel free to help
-flesh it out or, if you try to write an implementation, to tell us where things
-were ambiguous. The best way to do so is to [file an
-Issue](https://github.com/json-api/json-api/issues).
+The [base specification](/format/) should be considered stable. It will
+remain backwards compatible using a _never remove, only add_ strategy.
+
+Some work related to this specification, such as [extensions](/extensions/),
+is still experimental and should be considered a work in progress.
+
+This entire site, including the specification itself, is managed at JSON
+API's [GitHub repository](https://github.com/json-api/json-api). Please feel
+free to suggest changes or let us know if you write an implementation by filing
+an issue or pull request.

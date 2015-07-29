@@ -1,23 +1,21 @@
 ---
 layout: page
 title: "Recommendations"
+show_sidebar: true
 ---
 
 This section contains recommendations for JSON API implementations. These
 recommendations are intended to establish a level of consistency in areas that
 are beyond the scope of the base JSON API specification.
 
-## Recommendations for Naming <a href="#naming" id="naming" class="headerlink"></a>
+## Naming <a href="#naming" id="naming" class="headerlink"></a>
 
-It is recommended that resource types, attribute names, and association
-names be "dasherized"; i.e. consist of only lower case alphanumeric
-characters and dashes (U+002D HYPHEN-MINUS, "-").
+The allowed and recommended characters for an URL safe naming of members are defined in the format spec. To also standardize member names, the following (more restrictive) rules are recommended:
 
-It is also recommended that resource types be pluralized. Dasherized and
-pluralized resource types can be used as URL segments without translation,
-as discussed below.
+- Member names **SHOULD** start and end with the characters "a-z" (U+0061 to U+007A)
+- Member names **SHOULD** contain only the characters "a-z" (U+0061 to U+007A), "0-9" (U+0030 to U+0039), and the hyphen minus (U+002D HYPHEN-MINUS, "-") as separator between multiple words.
 
-## Recommendations for URL Design <a href="#urls" id="urls" class="headerlink"></a>
+## URL Design <a href="#urls" id="urls" class="headerlink"></a>
 
 ### Reference Document <a href="#urls-reference-document" id="urls-reference-document" class="headerlink"></a>
 
@@ -41,7 +39,7 @@ transport documents because order is significant.
 It is recommended that the URL for a collection of resources be formed from
 the resource type.
 
-For example, a collection of resources of type `"photos"` will have the URL:
+For example, a collection of resources of type `photos` will have the URL:
 
 ```text
 /photos
@@ -65,28 +63,28 @@ As described in the base specification, there are two URLs that can be exposed
 for each relationship:
 
 * the "relationship URL" - a URL for the relationship itself, which is
-identified with the `"self"` key in a link object. This URL allows the
-client to directly manipulate the relationship. For example, it would allow
-a client to remove an `author` from a `post` without deleting the `people`
+identified with the `self` key in a relationship's `links` object. This URL
+allows the client to directly manipulate the relationship. For example, it would
+allow a client to remove an `author` from a `post` without deleting the `people`
 resource itself.
 
 * the "related resource URL" - a URL for the related resource(s), which is
-identified with the `"related"` key within a link object. When fetched, it
-returns the related resource object(s) as the response's primary data.
+identified with the `related` key within a relationship's `links` object. When
+fetched, it returns the related resource object(s) as the response's primary data.
 
-It is recommended that a relationship URL be formed by appending `/links/` and
-the name of the relationship to the resource's URL.
+It is recommended that a relationship URL be formed by appending `/relationships/`
+and the name of the relationship to the resource's URL.
 
 For example, a photo's `comments` relationship will have the URL:
 
 ```text
-/photos/1/links/comments
+/photos/1/relationships/comments
 ```
 
 And a photo's `photographer` relationship will have the URL:
 
 ```text
-/photos/1/links/photographer
+/photos/1/relationships/photographer
 ```
 
 It is recommended that a related resource URL be formed by appending the name
@@ -108,7 +106,7 @@ Because these URLs represent resources in relationships, they should not be
 used as `self` links for the resources themselves. Instead the recommendations
 for individual resource URLs should still apply when forming `self` links.
 
-## Recommendations for Filtering <a href="#filtering" id="filtering" class="headerlink"></a>
+## Filtering <a href="#filtering" id="filtering" class="headerlink"></a>
 
 The base specification is agnostic about filtering strategies supported by a
 server. The `filter` query parameter is reserved to be used as the basis for
@@ -121,18 +119,33 @@ combine `filter` with the association name.
 For example, the following is a request for all comments associated with a
 particular post:
 
-```text
+```http
 GET /comments?filter[post]=1
 ```
 
 Multiple filter values can be combined in a comma-separated list. For example:
 
-```text
+```http
 GET /comments?filter[post]=1,2
 ```
 
 Furthermore, multiple filters can be applied to a single request:
 
-```text
+```http
 GET /comments?filter[post]=1,2&filter[author]=12
 ```
+
+## Supporting Clients Lacking `PATCH` <a href="#patchless-clients" id="patchless-clients" class="headerlink"></a>
+
+Some clients, like IE8, lack support for HTTP's `PATCH` method. API servers
+that wish to support these clients are recommended to treat `POST` requests as
+`PATCH` requests if the client includes the `X-HTTP-Method-Override: PATCH`
+header. This allows clients that lack `PATCH` support to have their update
+requests honored, simply by adding the header.
+
+## Formatting Date and Time Fields <a href="#date-and-time-fields" id="date-and-time-fields" class="headerlink"></a>
+
+Although JSON API does not specify the format of date and time fields, it is
+recommended that servers align with ISO 8601. [This W3C
+NOTE](http://www.w3.org/TR/NOTE-datetime) provides an overview of the
+recommended formats.

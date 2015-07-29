@@ -3,6 +3,12 @@ layout: page
 title: "Bulk Extension"
 ---
 
+## Status <a href="#status" id="status" class="headerlink"></a>
+
+**Extensions are an experimental feature** and should be considered a work
+in progress. There is no official support for extensions in the base JSON
+API specification.
+
 ## Introduction <a href="#introduction" id="introduction" class="headerlink"></a>
 
 The "Bulk extension" is an [official
@@ -40,12 +46,16 @@ Accept: application/vnd.api+json; ext=bulk
 {
   "data": [{
     "type": "photos",
-    "title": "Ember Hamster",
-    "src": "http://example.com/images/productivity.png"
+    "attributes": {
+      "title": "Ember Hamster",
+      "src": "http://example.com/images/productivity.png"
+    }
   }, {
     "type": "photos",
-    "title": "Mustaches on a Stick",
-    "src": "http://example.com/images/mustaches.png"
+    "attributes": {
+      "title": "Mustaches on a Stick",
+      "src": "http://example.com/images/mustaches.png"
+    }
   }]
 }
 ```
@@ -69,11 +79,15 @@ Accept: application/vnd.api+json; ext=bulk
   "data": [{
     "type": "articles",
     "id": "1",
-    "title": "To TDD or Not"
+    "attributes": {
+      "title": "To TDD or Not"
+    }
   }, {
     "type": "articles",
     "id": "2",
-    "title": "LOL Engineering"
+    "attributes": {
+      "title": "LOL Engineering"
+    }
   }]
 }
 ```
@@ -84,7 +98,7 @@ Multiple resources can be deleted by sending a `DELETE` request to a URL that
 represents a collection of resources to which they all belong.
 
 The body of the request **MUST** contain a `data` member whose value is an
-an array of objects that each contain a `type` and `id`.
+an array of resource identifier objects.
 
 For example:
 

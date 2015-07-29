@@ -10,21 +10,31 @@ JSON API is:
   * [@jsonapi](http://twitter.com/jsonapi) on
 [Twitter](http://twitter.com)
   * _#jsonapi_ channel on [Freenode IRC](http://freenode.net)
-  * [jsonapi Google group](https://groups.google.com/forum/?fromgroups#!forum/jsonapi)
+  * [jsonapi discussion forum](http://discuss.jsonapi.org)
 
 ## Editors <a href="#editors" id="editors" class="headerlink"></a>
 
-There are four primary editors of this specification:
+There are five primary editors of this specification:
 
 - [Steve Klabnik](http://twitter.com/steveklabnik)
 - [Yehuda Katz](http://twitter.com/wycats)
 - [Dan Gebhardt](http://twitter.com/dgeb)
 - [Tyler Kellen](http://twitter.com/tkellen)
+- [Ethan Resnick](http://twitter.com/ethanresnick)
+
+## Roadmap <a href="#roadmap" id="roadmap" class="headerlink"></a>
+
+### 1.1
+**Targeted Release Date:** September 30th, 2015
+
+* Embedding / creating multiple related resources in a single request
+* Extension support
 
 ## History <a href="#history" id="history" class="headerlink"></a>
 
-JSON API is extracted from the JSON transport implicitly defined by
-[Ember](http://emberjs.com/) Data's REST adapter.
+JSON API was originally drafted by [Yehuda Katz](http://twitter.com/wycats)
+in May 2013. This first draft was extracted from the JSON transport
+implicitly defined by [Ember](http://emberjs.com/) Data's REST adapter.
 
 In general, Ember Data's goal is to eliminate the need for ad-hoc code
 per application to communicate with servers that communicate in a
@@ -57,7 +67,4 @@ The goals of the media type are to balance:
 * Ease of implementation on the server side
 * Ease of implementation on the client side
 
-This media type is still a work in progress, and we are extremely open to
-feedback and proposals for improvement. That said, implementation work
-has already begun, and we value good working systems over perfect
-vaporware.
+This specification reached a stable version 1.0 on May 29, 2015.

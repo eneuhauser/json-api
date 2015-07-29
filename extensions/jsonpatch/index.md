@@ -3,6 +3,12 @@ layout: page
 title: "JSON Patch Extension"
 ---
 
+## Status <a href="#status" id="status" class="headerlink"></a>
+
+**Extensions are an experimental feature** and should be considered a work
+in progress. There is no official support for extensions in the base JSON
+API specification.
+
 ## Introduction <a href="#introduction" id="introduction" class="headerlink"></a>
 
 The "JSON Patch extension" is an [official
@@ -11,7 +17,7 @@ It provides support for modification of resources with the HTTP PATCH method
 [[RFC5789](http://tools.ietf.org/html/rfc5789)] and the JSON Patch format
 [[RFC6902](http://tools.ietf.org/html/rfc6902)].
 
-For the sake of brevity, operatons requested with `PATCH` and conforming
+For the sake of brevity, operations requested with `PATCH` and conforming
 with JSON Patch will be called "Patch operations".
 
 Servers and clients **MUST** negotiate support for and use of the JSON Patch
@@ -26,7 +32,7 @@ operations allowed in this top level array.
 
 ### Request URLs and Patch Paths <a href="#patch-urls" id="patch-urls" class="headerlink"></a>
 
-The request URL and each Patch operation's `"path"` are complementary and
+The request URL and each Patch operation's `path` are complementary and
 **MUST** combine to target a particular resource, collection, attribute, or
 relationship.
 
@@ -34,15 +40,15 @@ If a server supports the Patch extension, it **MUST** allow Patch operations at
 any resource or relationship URLs that accept POST, PATCH, or DELETE requests.
 
 Patch operations **MAY** also be allowed at the root URL of an API. In this
-case, every `"path"` within a Patch operation **MUST** include the full
+case, every `path` within a Patch operation **MUST** include the full
 resource path relative to the root URL. This allows for general "fire hose"
 updates to any resource or relationship represented by an API. As stated
 above, a server **MAY** limit the type, order, and count of bulk operations.
 
 ### Creating Resources <a href="#patch-creating" id="patch-creating" class="headerlink"></a>
 
-To create a resource, request an `"add"` operation with a `"path"` that points
-to the end of its corresponding resource collection (`"/-"`). The `"value"`
+To create a resource, request an `add` operation with a `path` that points
+to the end of its corresponding resource collection (`/-`). The `value`
 should contain a resource object.
 
 For example, a new photo could be created with the following request:
@@ -58,8 +64,10 @@ Accept: application/vnd.api+json; ext=jsonpatch
     "path": "/-",
     "value": {
       "type": "photos",
-      "title": "Ember Hamster",
-      "src": "http://example.com/images/productivity.png"
+      "attributes": {
+        "title": "Ember Hamster",
+        "src": "http://example.com/images/productivity.png"
+      }
     }
   }
 ]
@@ -67,8 +75,8 @@ Accept: application/vnd.api+json; ext=jsonpatch
 
 ### Updating Attributes <a href="#patch-updating-attributes" id="patch-updating-attributes" class="headerlink"></a>
 
-To update an attribute, perform a `"replace"` operation with the attribute's
-name specified by the `"path"`.
+To update an attribute, perform a `replace` operation with the attribute's
+name specified by the `path`.
 
 For instance, the following request should update just the `src` property of the
 photo at `/photos/1`:
@@ -90,19 +98,19 @@ relationship's URL.
 
 A server **MAY** also support relationship updates at a higher level, such
 as the resource's URL or the API's root URL. As discussed above, the request
-URL and each Patch operation's `"path"` must be complementary and combine to
+URL and each Patch operation's `path` must be complementary and combine to
 target a particular relationship's URL.
 
 #### Updating To-One Relationships <a href="#patch-updating-to-one-relationships" id="patch-updating-to-one-relationships" class="headerlink"></a>
 
-To update a to-one relationship, perform a `"replace"` operation with a URL and
-`"path"` that targets the relationship. The `"value"` should be a link object
-that contains `"type"` and `"id"` members.
+To update a to-one relationship, perform a `replace` operation with a URL
+and `path` that targets the relationship. The `value` **MUST** be a
+resource identifier object or `null`, to remove the relationship.
 
 For instance, the following request should update the `author` of an article:
 
 ```text
-PATCH /article/1/links/author
+PATCH /article/1/relationships/author
 Content-Type: application/vnd.api+json; ext=jsonpatch
 Accept: application/vnd.api+json; ext=jsonpatch
 
@@ -115,7 +123,7 @@ To remove a to-one relationship, perform a `replace` operation on the
 relationship to change its value to `null`. For example:
 
 ```text
-PATCH /article/1/links/author
+PATCH /article/1/relationships/author
 Content-Type: application/vnd.api+json; ext=jsonpatch
 Accept: application/vnd.api+json; ext=jsonpatch
 
@@ -129,11 +137,11 @@ Accept: application/vnd.api+json; ext=jsonpatch
 A server **MUST** respond to Patch operations that target a *to-many
 relationship URL* as described below.
 
-For all operations, the `"value"` **MUST** contain an object that contains
-`type` and `id` members, or an array of objects that each contain `type`
-and `id` members.
+For all operations, the `value` **MUST** contain an object that contains
+an array of resource identifier objects or an empty array, to remove all
+elements of the relationship.
 
-If a client requests a `"replace"` operation to a *to-many relationship URL*, the
+If a client requests a `replace` operation to a *to-many relationship URL*, the
 server **MUST** either completely replace every member of the relationship,
 return an appropriate error response if some resources can not be found or
 accessed, or return a `403 Forbidden` response if complete replacement is
@@ -142,38 +150,38 @@ not allowed by the server.
 For example, the following request replaces every tag for an article:
 
 ```text
-PATCH /photos/1/links/tags
+PATCH /photos/1/relationships/tags
 Content-Type: application/vnd.api+json; ext=jsonpatch
 Accept: application/vnd.api+json; ext=jsonpatch
 
 [
-  { 
-    "op": "replace", 
-    "path": "", 
+  {
+    "op": "replace",
+    "path": "",
     "value": [
-      { "type": "tags", "id": "2" }, 
-      { "type": "tags", "id": "3" } 
+      { "type": "tags", "id": "2" },
+      { "type": "tags", "id": "3" }
     ]
   }
 ]
 ```
 
-To add an element to a to-many relationship, request an `"add"` operation that
+To add an element to a to-many relationship, request an `add` operation that
 targets the relationship's URL. Because the operation is targeting the end of a
-collection, the `"path"` must end with `"/-"`.
+collection, the `path` must end with `/-`.
 
 In the following example, the comment with ID `123` is added to the list of
 comments for the article with ID `1`:
 
 ```text
-PATCH /articles/1/links/comments
+PATCH /articles/1/relationships/comments
 Content-Type: application/vnd.api+json; ext=jsonpatch
 Accept: application/vnd.api+json; ext=jsonpatch
 
 [
-  { 
-    "op": "add", 
-    "path": "/-", 
+  {
+    "op": "add",
+    "path": "/-",
     "value": [
       { "type": "comments", "id": "123" }
     ]
@@ -181,21 +189,21 @@ Accept: application/vnd.api+json; ext=jsonpatch
 ]
 ```
 
-To remove a to-many relationship, perform a `"remove"` operation that targets
+To remove a to-many relationship, perform a `remove` operation that targets
 the relationship's URL.
 
 In the following example, comments with IDs of `5` and `13` are removed
 from the list of comments for the article with ID `1`:
 
 ```text
-PATCH /articles/1/links/comments
+PATCH /articles/1/relationships/comments
 Content-Type: application/vnd.api+json; ext=jsonpatch
 Accept: application/vnd.api+json; ext=jsonpatch
 
 [
-  { 
-    "op": "remove", 
-    "path": "", 
+  {
+    "op": "remove",
+    "path": "",
     "value": [
       { "type": "comments", "id": "5" },
       { "type": "comments", "id": "13" }
@@ -206,10 +214,10 @@ Accept: application/vnd.api+json; ext=jsonpatch
 
 ### Deleting a Resource <a href="#patch-deleting" id="patch-deleting" class="headerlink"></a>
 
-To delete a resource, perform a `"remove"` operation with a URL and `"path"`
+To delete a resource, perform a `remove` operation with a URL and `path`
 that targets the resource.
 
-For instance, photo `1` might be deleted with the following request:
+For instance, photo `"1"` might be deleted with the following request:
 
 ```text
 PATCH /photos/1
@@ -255,8 +263,10 @@ Accept: application/vnd.api+json; ext=jsonpatch
     "path": "/-",
     "value": {
       "type": "photos",
-      "title": "Ember Hamster",
-      "src": "http://example.com/images/productivity.png"
+      "attributes": {
+        "title": "Ember Hamster",
+        "src": "http://example.com/images/productivity.png"
+      }
     }
   },
   {
@@ -264,8 +274,10 @@ Accept: application/vnd.api+json; ext=jsonpatch
     "path": "/-",
     "value": {
       "type": "photos",
-      "title": "Mustaches on a Stick",
-      "src": "http://example.com/images/mustaches.png"
+      "attributes": {
+        "title": "Mustaches on a Stick",
+        "src": "http://example.com/images/mustaches.png"
+      }
     }
   }
 ]
@@ -283,42 +295,30 @@ Content-Type: application/vnd.api+json; ext=jsonpatch
     "data": [{
       "type": "photos",
       "id": "123",
-      "title": "Ember Hamster",
-      "src": "http://example.com/images/productivity.png"
+      "attributes": {
+        "title": "Ember Hamster",
+        "src": "http://example.com/images/productivity.png"
+      }
     }]
   }, {
     "data": [{
       "type": "photos",
       "id": "124",
-      "title": "Mustaches on a Stick",
-      "src": "http://example.com/images/mustaches.png"
+      "attributes": {
+        "title": "Mustaches on a Stick",
+        "src": "http://example.com/images/mustaches.png"
+      }
     }]
   }
 ]
 ```
 
-#### Other Responses <a href="#patch-responses-other" id="patch-responses-other" class="headerlink"></a>
-
-When a server encounters one or more problems while processing a Patch
-operation, it **SHOULD** specify the most appropriate HTTP error code in the
-response. Clients **MUST** interpret those errors in accordance with HTTP
-semantics.
-
-A server **MAY** choose to stop processing Patch operations as soon as the
-first problem is encountered, or it **MAY** continue processing operations and
-encounter multiple problems. For instance, a server might process multiple
-attribute updates and then return multiple validation problems in a single
-response.
-
-When a server encounters multiple problems from a single request, the most
-generally applicable HTTP error code should be specified in the response. For
-instance, `400 Bad Request` might be appropriate for multiple 4xx errors or `500
-Internal Server Error` might be appropriate for multiple 5xx errors.
+#### Errors <a href="#patch-responses-errors" id="patch-responses-errors" class="headerlink"></a>
 
 A server **MAY** return error objects that correspond to each operation. The
 body of the response **MUST** contain an array of JSON objects, which
 **MUST** be in sequential order and correspond to the operations in the
 request document. Each response object **SHOULD** contain only error objects
-keyed by `"errors"`, since no operations can be completed successfully when
+keyed by `errors`, since no operations can be completed successfully when
 any errors occur. Error codes for each specific operation **SHOULD** be
-returned in the `"status"` member of each error object.
+returned in the `status` member of each error object.
