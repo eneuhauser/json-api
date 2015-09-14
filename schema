@@ -4,6 +4,9 @@
   "description": "This is a schema for responses in the JSON API format. For more, see http://jsonapi.org",
   "oneOf": [
     {
+      "$ref": "#/definitions/post"
+    },
+    {
       "$ref": "#/definitions/success"
     },
     {
@@ -15,6 +18,18 @@
   ],
   
   "definitions": {
+    "post": {
+      "type": "object",
+      "required": [
+        "data"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/newResource"
+        }
+      },
+      "additionalProperties": false
+    },
     "success": {
       "type": "object",
       "required": [
@@ -114,12 +129,11 @@
         }
       ]
     },
-    "resource": {
+    "newResource": {
       "description": "\"Resource objects\" appear in a JSON API document to represent resources.",
       "type": "object",
       "required": [
-        "type",
-        "id"
+        "type"
       ],
       "properties": {
         "type": {
@@ -142,6 +156,20 @@
         }
       },
       "additionalProperties": false
+    },
+    "resource": {
+      "description": "\"Resource objects\" appear in a JSON API document to represent resources.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/newResource"
+        },
+        {
+          "required": [
+            "type",
+            "id"
+          ]
+        }
+      ]
     },
     
     "links": {
